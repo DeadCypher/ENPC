@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ENPC 75-Question Mock Exam</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f6f8;
+  color: #222;
+  margin: 0;
+  padding: 0;
+}
+header {
+  background-color: #004080;
+  color: #fff;
+  padding: 15px;
+  text-align: center;
+  font-size: 1.5em;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+#timer { font-size: 1em; color: #ffeb3b; margin-top: 5px; }
+#progress-container {
+  background-color: #ccc;
+  border-radius: 5px;
+  margin: 10px auto;
+  height: 15px;
+  width: 90%;
+  overflow: hidden;
+}
+#progress-bar {
+  height: 100%;
+  background-color: #28a745;
+  width: 0%;
+  transition: width 0.3s;
+}
+#container { display: flex; max-width: 1200px; margin: 20px auto; }
+#question-panel { flex: 1; padding: 0 15px; }
+#grid-panel {
+  width: 120px;
+  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.grid-btn {
+  width: 28px; height: 28px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: #ddd;
+  cursor: pointer;
+  font-size: 0.8em;
+  text-align: center;
+  line-height: 28px;
+}
+.grid-btn.answered { background-color: #28a745; color:#fff; }
+.grid-btn.wrong { background-color: #dc3545; color:#fff; }
+.question-card { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: none; }
+.question-card.active { display: block; }
+.question-text { font-weight: bold; margin-bottom: 15px; }
+.options button { display: block; width: 100%; text-align: left; margin: 5px 0; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 1em; cursor: pointer; background-color: #f9f9f9; transition: 0.2s; }
+.options button.correct { background-color: #d4edda; border-color: #28a745; color: #155724; }
+.options button.wrong { background-color: #f8d7da; border-color: #dc3545; color: #721c24; }
+.rationale { margin-top: 10px; padding: 10px; border-left: 4px solid #004080; background-color: #e9f0f7; display: none; }
+.show-rationale { display: block; }
+#navigation { display: flex; justify-content: space-between; margin-top: 20px; }
+#navigation button { padding: 10px 20px; border-radius: 6px; border: none; background-color: #004080; color: #fff; font-size: 1em; cursor: pointer; }
+#navigation button:disabled { opacity: 0.6; cursor: not-allowed; }
+#scoreboard { display: none; text-align: center; padding: 20px; background-color: #004080; color: #fff; border-radius: 8px; margin: 20px auto; max-width: 600px; }
+.analytics { display: flex; justify-content: space-around; flex-wrap: wrap; margin-top: 10px; }
+.analytics div { background: #fff; color: #222; padding: 15px; border-radius: 6px; margin: 10px; flex: 1 1 40%; box-shadow: 0 2px 6px rgba(0,0,0,0.1);}
+@media(max-width:900px){#container{flex-direction:column;}#grid-panel{width:100%;justify-content:center;}}
+</style>
+</head>
+<body>
+
+<header>
+  ENPC 75-Question Mock Exam
+  <div id="timer">75:00</div>
+  <div id="progress-container">
+    <div id="progress-bar"></div>
+  </div>
+</header>
+
+<div id="container">
+  <div id="grid-panel"></div>
+  <div id="question-panel">
+    <main id="exam-container"></main>
+    <div id="navigation">
+      <button id="prev-btn">Previous</button>
+      <button id="next-btn">Next</button>
+    </div>
+  </div>
+</div>
+
+<div id="scoreboard">
+  <h2>Exam Completed!</h2>
+  <div class="analytics">
+    <div>Total Questions: <span id="total"></span></div>
+    <div>Correct Answers: <span id="correct"></span></div>
+    <div>Incorrect Answers: <span id="incorrect"></span></div>
+    <div>Score (%): <span id="percentage"></span></div>
+  </div>
+</div>
+
+<script>
+const questions = [{
+q: "A 3‑year‑old presents with inspiratory stridor at rest and drooling after a viral illness, sitting in a tripod position. What is the priority action?",
+o: ["Attempt an oropharyngeal exam","Administer oral antibiotic","Assess airway patency","Give antipyretics"],
+a: 2,
+r: [
+  {letter:"A", text:"❌ Performing an oropharyngeal exam may provoke airway collapse. In a child with stridor and possible upper airway edema, this can worsen obstruction."},
+  {letter:"B", text:"❌ Oral antibiotics are not emergently indicated for suspected viral croup or airway compromise."},
+  {letter:"C", text:"✅ The first priority is to assess airway patency to ensure adequate oxygenation."},
+  {letter:"D", text:"❌ Antipyretics address fever but do not treat airway compromise."}
+]
+},
+//
+// 2
+//
+{
+q: "A 6‑year‑old with asthma presents with severe wheezing and a “silent chest.” What does a silent chest most likely indicate?",
+o: ["Airway improvement","Severe airway obstruction","Bronchitis","Anxiety"],
+a: 1,
+r: [
+  {letter:"A", text:"❌ ‘Silent chest’ is not improvement — it means no effective air movement."},
+  {letter:"B", text:"✅ Silent chest suggests critically poor airflow due to severe obstruction."},
+  {letter:"C", text:"❌ Bronchitis causes wheezing, not an absence of breath sounds."},
+  {letter:"D", text:"❌ Anxiety does not physiologically stop airflow; silent chest is a physical sign of poor ventilation."}
+]
+},
+
+//
+// 3
+//
+{
+q: "A 10‑month‑old infant arrives with fever and a generalized seizure lasting 6 minutes. What should be done first?",
+o: ["Check blood glucose","Give acetaminophen","Start IV antibiotics","Order head CT"],
+a: 0,
+r: [
+  {letter:"A", text:"✅ Hypoglycemia can trigger seizures; checking glucose should be immediate."},
+  {letter:"B", text:"❌ Fever control is secondary to stabilizing airway and metabolic causes."},
+  {letter:"C", text:"❌ Antibiotics may be indicated later but are not immediate priority."},
+  {letter:"D", text:"❌ CT is not an emergency until stabilization and metabolic causes are addressed."}
+]
+},
+
+//
+// 4
+//
+{
+q: "A 2‑year‑old with vomiting and diarrhea for 24 hours presents with sunken eyes and dry mucous membranes. Which finding best indicates severe dehydration?",
+o: ["Moist mucosa","Sunken eyes","Warm extremities","Strong pulse"],
+a: 1,
+r: [
+  {letter:"A", text:"❌ Moist mucosa suggests mild dehydration."},
+  {letter:"B", text:"✅ Sunken eyes are a hallmark of severe dehydration."},
+  {letter:"C", text:"❌ Warm extremities do not indicate severity of dehydration."},
+  {letter:"D", text:"❌ Strong pulse only reflects heart rate; it doesn’t assess perfusion status."}
+]
+},
+
+//
+// 5
+//
+{
+q: "A child presents with a barking cough and inspiratory stridor, worse at night. Which condition is most likely?",
+o: ["Bronchiolitis","Croup","Epiglottitis","Asthma"],
+a: 1,
+r: [
+  {letter:"A", text:"❌ Bronchiolitis causes wheezing in infants, not a barking cough."},
+  {letter:"B", text:"✅ Croup classically causes a barking cough with stridor, often nocturnally."},
+  {letter:"C", text:"❌ Epiglottitis presents with drooling and severe distress, not a barking cough."},
+  {letter:"D", text:"❌ Asthma presents with wheezing and prolonged expiration, not a barking cough."}
+]
+},
+
+//
+// 6
+//
+{
+q: "A 7‑year‑old with closed femur fracture after a fall has cool, pale extremities and delayed capillary refill. Which sign is concerning?",
+o: ["Warm extremities","Bounding pulses","Pale cool extremities","Capillary refill <2s"],
+a: 2,
+r: [
+  {letter:"A", text:"❌ Warm extremities are normal; cool/pale suggests poor perfusion."},
+  {letter:"B", text:"❌ Bounding pulses do not indicate shock."},
+  {letter:"C", text:"✅ Pale, cool extremities with delayed refill suggest poor perfusion and possible shock."},
+  {letter:"D", text:"❌ Capillary refill <2s is normal; delayed (>2s) is concerning."}
+]
+},
+
+//
+// 7
+//
+{
+q: "During pediatric trauma assessment, what is the first priority?",
+o: ["Circulation","Airway with cervical spine control","Disability","Exposure"],
+a: 1,
+r: [
+  {letter:"A", text:"❌ Circulation is assessed after airway (ABCs)."},
+  {letter:"B", text:"✅ Airway with cervical spine control is the first priority."},
+  {letter:"C", text:"❌ Disability (neuro status) is assessed after airway and breathing."},
+  {letter:"D", text:"❌ Exposure is part of secondary survey, not initial priority."}
+]
+},
+
+//
+// 8
+//
+{
+q: "Appropriate initial fluid bolus for pediatric shock is:",
+o: ["5 mL/kg","10 mL/kg","20 mL/kg","40 mL/kg"],
+a: 2,
+r: [
+  {letter:"A", text:"❌ 5 mL/kg is too small for initial resuscitation."},
+  {letter:"B", text:"❌ 10 mL/kg is still insufficient for shock resuscitation."},
+  {letter:"C", text:"✅ 20 mL/kg isotonic fluid bolus is the recommended initial resuscitation dose."},
+  {letter:"D", text:"❌ 40 mL/kg is excessive on first bolus; reassess after 20 mL/kg."}
+]
+},
+
+//
+// 9
+//
+{
+q: "A 10‑month‑old with irritability and ashen skin following hours of vomiting most likely has:",
+o: ["Dehydration","Sepsis","Bronchiolitis","Epilepsy"],
+a: 0,
+r: [
+  {letter:"A", text:"✅ Dehydration fits the clinical presentation of fluid loss."},
+  {letter:"B", text:"❌ Sepsis typically includes fever/systemic signs."},
+  {letter:"C", text:"❌ Bronchiolitis is respiratory illness, not isolated vomiting."},
+  {letter:"D", text:"❌ Epilepsy unrelated absent seizures."}
+]
+},
+
+//
+// 10
+//
+{
+q: "A 4‑year‑old with tachycardia, delayed cap refill, and normal blood pressure suggests:",
+o: ["Hypotension","Bradycardia","Compensated shock","Cyanosis"],
+a: 2,
+r: [
+  {letter:"A", text:"❌ Hypotension is a late sign of shock."},
+  {letter:"B", text:"❌ Bradycardia is also a late, ominous sign."},
+  {letter:"C", text:"✅ Compensated shock presents with tachycardia and delayed refill with normal blood pressure."},
+  {letter:"D", text:"❌ Cyanosis is a late sign when oxygenation is severely compromised."}
+]
+},
+
+//
+// 11
+//
+{
+q: "A child ingests an unknown household chemical. He is conscious but drooling and coughing. What is the first action?",
+o: ["Induce vomiting","Give milk","Call Poison Control","Perform gastric lavage"],
+a: 2,
+r: [
+  {letter:"A", text:"❌ Inducing vomiting can worsen caustic injury."},
+  {letter:"B", text:"❌ Milk may dilute but does not address toxicity; Poison Control is first."},
+  {letter:"C", text:"✅ Calling Poison Control provides tailored guidance on safe management."},
+  {letter:"D", text:"❌ Gastric lavage is rarely used and not first action."}
+]
+},
+
+//
+// 12
+//
+{
+q: "A 6‑year‑old with suspected anaphylaxis has difficulty breathing and hives. Which medication is first-line?",
+o: ["Diphenhydramine","Albuterol","Epinephrine IM","Steroids IV"],
+a: 2,
+r: [
+  {letter:"A", text:"❌ Antihistamines help later but are not lifesaving first-line."},
+  {letter:"B", text:"❌ Bronchodilators help bronchospasm but do not treat airway swelling."},
+  {letter:"C", text:"✅ IM epinephrine is first-line in anaphylaxis."},
+  {letter:"D", text:"❌ Steroids have delayed onset; not initial emergency drug."}
+]
+},
+
+//
+// 13
+//
+{
+q: "A toddler’s respiratory rate of 25 indicates:",
+o: ["Tachypnea","Bradypnea","Normal range","Apnea"],
+a: 2,
+r: [
+  {letter:"A", text:"❌ 25 alone in toddlers is not tachypnea; normal varies by age."},
+  {letter:"B", text:"❌ Bradypnea = slowed rate; not seen here."},
+  {letter:"C", text:"✅ 25 breaths/minute is within normal range for a toddler."},
+  {letter:"D", text:"❌ Apnea is absence of breathing."}
+]
+},
+
+//
+// 14
+//
+{
+q: "A febrile infant <28 days old arrives at the ED. What is the best next step?",
+o: ["Observe 2 hours","Discharge with instructions","Full sepsis workup","Give antipyretics"],
+a: 2,
+r: [
+  {letter:"A", text:"❌ Observation alone is unsafe."},
+  {letter:"B", text:"❌ Discharge is too risky for a neonate with fever."},
+  {letter:"C", text:"✅ Full sepsis workup is indicated in febrile neonates."},
+  {letter:"D", text:"❌ Antipyretics do not replace necessary workup."}
+]
+},
+
+//
+// 15
+//
+{
+q: "A child post‑tonsillectomy has bright red bleeding. What action should you take first?",
+o: ["Apply ice collar","Allow rest","Watch & wait","Pack the throat"],
+a: 0,
+r: [
+  {letter:"A", text:"✅ Applying an ice collar causes vasoconstriction to help reduce bleeding."},
+  {letter:"B", text:"❌ Rest does not address active hemorrhage."},
+  {letter:"C", text:"❌ Observation without intervention delays care."},
+  {letter:"D", text:"❌ Throat packing can worsen airway obstruction."}
+]
+},
+
+//
+// 16
+//
+{
+q: "After severe dehydration, the best indicator of effective fluid resuscitation is:",  
+o: ["Moist mouth","Cap refill <2s","Normal pulse","Warm skin"],  
+a: 1,  
+r: [  
+  {letter:"A", text:"❌ Moist mouth alone does not ensure adequate perfusion."},  
+  {letter:"B", text:"✅ Capillary refill <2 seconds indicates improved perfusion."},  
+  {letter:"C", text:"❌ Normal pulse does not alone indicate effective resuscitation."},  
+  {letter:"D", text:"❌ Warm skin may be present regardless of perfusion."}  
+]  
+},  
+
+//
+// 17
+//
+{
+q: "A child with suspected meningitis presents with neck stiffness and photophobia. Which combined sign supports meningeal irritation?",  
+o: ["Brudzinski’s","Kernig’s","Babinski","Brudzinski + Kernig"],  
+a: 3,  
+r: [
+  {letter:"A", text:"❌ Brudzinski’s sign alone suggests irritation but not as definitive alone."},
+  {letter:"B", text:"❌ Kernig’s suggests irritation but is not specific alone."},
+  {letter:"C", text:"❌ Babinski sign indicates neurologic dysfunction but not meningeal irritation."},
+  {letter:"D", text:"✅ Combined Brudzinski’s and Kernig’s strongly support meningeal irritation."}
+]
+},  
+
+//
+// 18
+//
+{
+q: "Appropriate target oxygen saturation (SpO₂) for a sick child is:",  
+o: [">90%","≥92%","≥94%","≥96%"],  
+a: 2,  
+r: [
+  {letter:"A", text:"❌ >90% may be too low for pediatric patients."},
+  {letter:"B", text:"❌ ≥92% is reasonable but not optimal target."},
+  {letter:"C", text:"✅ ≥94% is the recommended target for most sick children."},
+  {letter:"D", text:"❌ ≥96% is not necessary and may promote oxygen toxicity."}
+]
+},  
+
+//
+// 19
+//
+{
+q: "A child with severe dehydration and poor perfusion should be given:",  
+o: ["Oral fluids","IV isotonic fluids","Dextrose 10%","LR with dextrose"],  
+a: 1,  
+r: [
+  {letter:"A", text:"❌ Oral fluids are not appropriate in shock."},
+  {letter:"B", text:"✅ IV isotonic fluids are indicated for resuscitation."},
+  {letter:"C", text:"❌ Dextrose alone does not restore intravascular volume."},
+  {letter:"D", text:"❌ LR with dextrose might be appropriate later, but initial is isotonic."}
+]
+},
+
+//
+// 20
+//
+{
+q: "During a seizure episode, what is the best initial action?",  
+o: ["Restrain child","Insert tongue blade","Protect airway","Give cold cloth"],  
+a: 2,  
+r: [
+  {letter:"A", text:"❌ Restraining may cause injury."},
+  {letter:"B", text:"❌ Tongue blades can injure oral structures."},
+  {letter:"C", text:"✅ Protecting the airway and clearing secretions is correct."},
+  {letter:"D", text:"❌ Cold cloth does not stop the seizure."}
+]
+},
+
+//
+// 21
+//
+{
+q: "Which tachyarrhythmia is most common in pediatric emergencies?",
+o: ["SVT","V-fib","Atrial fibrillation","Bradyarrhythmia"],
+a: 0,
+r: [
+  {letter:"A", text:"✅ SVT is most common pediatric arrhythmia."},
+  {letter:"B", text:"❌ V‑fib is rare in children."},
+  {letter:"C", text:"❌ Atrial fibrillation uncommon."},
+  {letter:"D", text:"❌ Bradyarrhythmias are not tachyarrhythmias."}
+]
+},
+
+//
+// 22
+//
+{
+q: "A child with suspected appendicitis has right lower quadrant pain. Which sign supports this diagnosis?",  
+o: ["Murphy’s","Rebound tenderness","Kernig’s","Cullen’s"],  
+a: 1,
+r: [
+  {letter:"A", text:"❌ Murphy’s sign is for gallbladder pathology."},
+  {letter:"B", text:"✅ Rebound tenderness suggests peritonitis in appendicitis."},
+  {letter:"C", text:"❌ Kernig’s is a meningeal sign."},
+  {letter:"D", text:"❌ Cullen’s suggests intra‑abdominal bleed."}
+]
+},
+
+//
+// 23
+//
+{
+q: "A child with suspected abuse has inconsistent history and a spiral fracture. What is the appropriate action?",  
+o: ["Dismiss concern","Report to authorities","Return home","Wait for clarification"],  
+a: 1,
+r: [
+  {letter:"A", text:"❌ Dismissing risks further harm."},
+  {letter:"B", text:"✅ Report concern for safety."},
+  {letter:"C", text:"❌ Returning home may be dangerous."},
+  {letter:"D", text:"❌ Waiting delays protection."}
+]
+},
+
+//
+// 24
+//
+{
+q: "In anaphylaxis, which airway sign is most concerning?",  
+o: ["Hoarseness","Stridor","Wheezing","Sneezing"],  
+a: 1,
+r: [
+  {letter:"A", text:"❌ Hoarseness is concerning but not as critical as stridor."},
+  {letter:"B", text:"✅ Stridor indicates upper airway swelling and obstruction."},
+  {letter:"C", text:"❌ Wheezing is lower airway; stridor is upper airway."},
+  {letter:"D", text:"❌ Sneezing is not an emergency sign."}
+]
+},
+//
+// 2
+//
+{
+q: "A 6‑year‑old with asthma presents with severe wheezing and a “silent chest.” What does a silent chest most likely indicate?",
+o: ["Airway improvement","Severe airway obstruction","Bronchitis","Anxiety"],
+a: 1,
+r: [
+  {letter:"A", text:"❌ ‘Silent chest’ is not improvement — it means no effective air movement."},
+  {letter:"B", text:"✅ Silent chest suggests critically poor airflow due to severe obstruction."},
+  {letter:"C", text:"❌ Bronchitis causes wheezing, not an absence of breath sounds."},
+  {letter:"D", text:"❌ Anxiety does not physiologically stop airflow; silent chest is a physical sign of poor ventilation."}
+]
+},
+
+//
+// 3
+//
+{
+q: "A 10‑month‑old infant arrives with fever and a generalized seizure lasting 6 minutes. What should be done first?",
+o: ["Check blood glucose","Give acetaminophen","Start IV antibiotics","Order head CT"],
+a: 0,
+r: [
+  {letter:"A", text:"✅ Hypoglycemia can trigger seizures; checking glucose should be immediate."},
+  {letter:"B", text:"❌ Fever control is secondary to stabilizing airway and metabolic causes."},
+  {letter:"C", text:"❌ Antibiotics may be indicated later but are not immediate priority."},
+  {letter:"D", text:"❌ CT is not an emergency until stabilization and metabolic causes are addressed."}
+]
+},
+
+//
+// 4
+//
+{
+q: "A 2‑year‑old with vomiting and diarrhea for 24 hours presents with sunken eyes and dry mucous membranes. Which finding best indicates severe dehydration?",
+o: ["Moist mucosa","Sunken eyes","Warm extremities","Strong pulse"],
+a: 1,
+r: [
+  {letter:"A", text:"❌ Moist mucosa suggests mild dehydration."},
+  {letter:"B", text:"✅ Sunken eyes are a hallmark of severe dehydration."},
+  {letter:"C", text:"❌ Warm extremities do not indicate severity of dehydration."},
+  {letter:"D", text:"❌ Strong pulse only reflects heart rate; it doesn’t assess perfusion status."}
+]
+},
+
+//
+// 5
+//
+{
+q: "A child presents with a barking cough and inspiratory stridor, worse at night. Which condition is most likely?",
+o: ["Bronchiolitis","Croup","Epiglottitis","Asthma"],
+a: 1,
+r: [
+  {letter:"A", text:"❌ Bronchiolitis causes wheezing in infants, not a barking cough."},
+  {letter:"B", text:"✅ Croup classically causes a barking cough with stridor, often nocturnally."},
+  {letter:"C", text:"❌ Epiglottitis presents with drooling and severe distress, not a barking cough."},
+  {letter:"D", text:"❌ Asthma presents with wheezing and prolonged expiration, not a barking cough."}
+]
+},
+
+//
+// 6
+//
+{
+q: "A 7‑year‑old with closed femur fracture after a fall has cool, pale extremities and delayed capillary refill. Which sign is concerning?",
+o: ["Warm extremities","Bounding pulses","Pale cool extremities","Capillary refill <2s"],
+a: 2,
+r: [
+  {letter:"A", text:"❌ Warm extremities are normal; cool/pale suggests poor perfusion."},
+  {letter:"B", text:"❌ Bounding pulses do not indicate shock."},
+  {letter:"C", text:"✅ Pale, cool extremities with delayed refill suggest poor perfusion and possible shock."},
+  {letter:"D", text:"❌ Capillary refill <2s is normal; delayed (>2s) is concerning."}
+]
+},
+
+//
+// 7
+//
+{
+q: "During pediatric trauma assessment, what is the first priority?",
+o: ["Circulation","Airway with cervical spine control","Disability","Exposure"],
+a: 1,
+r: [
+  {letter:"A", text:"❌ Circulation is assessed after airway (ABCs)."},
+  {letter:"B", text:"✅ Airway with cervical spine control is the first priority."},
+  {letter:"C", text:"❌ Disability (neuro status) is assessed after airway and breathing."},
+  {letter:"D", text:"❌ Exposure is part of secondary survey, not initial priority."}
+]
+},
+
+//
+// 8
+//
+{
+q: "Appropriate initial fluid bolus for pediatric shock is:",
+o: ["5 mL/kg","10 mL/kg","20 mL/kg","40 mL/kg"],
+a: 2,
+r: [
+  {letter:"A", text:"❌ 5 mL/kg is too small for initial resuscitation."},
+  {letter:"B", text:"❌ 10 mL/kg is still insufficient for shock resuscitation."},
+  {letter:"C", text:"✅ 20 mL/kg isotonic fluid bolus is the recommended initial resuscitation dose."},
+  {letter:"D", text:"❌ 40 mL/kg is excessive on first bolus; reassess after 20 mL/kg."}
+]
+},
+
+//
+// 9
+//
+{
+q: "A 10‑month‑old with irritability and ashen skin following hours of vomiting most likely has:",
+o: ["Dehydration","Sepsis","Bronchiolitis","Epilepsy"],
+a: 0,
+r: [
+  {letter:"A", text:"✅ Dehydration fits the clinical presentation of fluid loss."},
+  {letter:"B", text:"❌ Sepsis typically includes fever/systemic signs."},
+  {letter:"C", text:"❌ Bronchiolitis is respiratory illness, not isolated vomiting."},
+  {letter:"D", text:"❌ Epilepsy unrelated absent seizures."}
+]
+},
+
+//
+// 10
+//
+{
+q: "A 4‑year‑old with tachycardia, delayed cap refill, and normal blood pressure suggests:",
+o: ["Hypotension","Bradycardia","Compensated shock","Cyanosis"],
+a: 2,
+r: [
+  {letter:"A", text:"❌ Hypotension is a late sign of shock."},
+  {letter:"B", text:"❌ Bradycardia is also a late, ominous sign."},
+  {letter:"C", text:"✅ Compensated shock presents with tachycardia and delayed refill with normal blood pressure."},
+  {letter:"D", text:"❌ Cyanosis is a late sign when oxygenation is severely compromised."}
+]
+},
+
+//
+// 11
+//
+{
+q: "A child ingests an unknown household chemical. He is conscious but drooling and coughing. What is the first action?",
+o: ["Induce vomiting","Give milk","Call Poison Control","Perform gastric lavage"],
+a: 2,
+r: [
+  {letter:"A", text:"❌ Inducing vomiting can worsen caustic injury."},
+  {letter:"B", text:"❌ Milk may dilute but does not address toxicity; Poison Control is first."},
+  {letter:"C", text:"✅ Calling Poison Control provides tailored guidance on safe management."},
+  {letter:"D", text:"❌ Gastric lavage is rarely used and not first action."}
+]
+},
+
+//
+// 12
+//
+{
+q: "A 6‑year‑old with suspected anaphylaxis has difficulty breathing and hives. Which medication is first-line?",
+o: ["Diphenhydramine","Albuterol","Epinephrine IM","Steroids IV"],
+a: 2,
+r: [
+  {letter:"A", text:"❌ Antihistamines help later but are not lifesaving first-line."},
+  {letter:"B", text:"❌ Bronchodilators help bronchospasm but do not treat airway swelling."},
+  {letter:"C", text:"✅ IM epinephrine is first-line in anaphylaxis."},
+  {letter:"D", text:"❌ Steroids have delayed onset; not initial emergency drug."}
+]
+},
+
+//
+// 13
+//
+{
+q: "A toddler’s respiratory rate of 25 indicates:",
+o: ["Tachypnea","Bradypnea","Normal range","Apnea"],
+a: 2,
+r: [
+  {letter:"A", text:"❌ 25 alone in toddlers is not tachypnea; normal varies by age."},
+  {letter:"B", text:"❌ Bradypnea = slowed rate; not seen here."},
+  {letter:"C", text:"✅ 25 breaths/minute is within normal range for a toddler."},
+  {letter:"D", text:"❌ Apnea is absence of breathing."}
+]
+},
+
+//
+// 14
+//
+{
+q: "A febrile infant <28 days old arrives at the ED. What is the best next step?",
+o: ["Observe 2 hours","Discharge with instructions","Full sepsis workup","Give antipyretics"],
+a: 2,
+r: [
+  {letter:"A", text:"❌ Observation alone is unsafe."},
+  {letter:"B", text:"❌ Discharge is too risky for a neonate with fever."},
+  {letter:"C", text:"✅ Full sepsis workup is indicated in febrile neonates."},
+  {letter:"D", text:"❌ Antipyretics do not replace necessary workup."}
+]
+},
+
+//
+// 15
+//
+{
+q: "A child post‑tonsillectomy has bright red bleeding. What action should you take first?",
+o: ["Apply ice collar","Allow rest","Watch & wait","Pack the throat"],
+a: 0,
+r: [
+  {letter:"A", text:"✅ Applying an ice collar causes vasoconstriction to help reduce bleeding."},
+  {letter:"B", text:"❌ Rest does not address active hemorrhage."},
+  {letter:"C", text:"❌ Observation without intervention delays care."},
+  {letter:"D", text:"❌ Throat packing can worsen airway obstruction."}
+]
+},
+
+//
+// 16
+//
+{
+q: "After severe dehydration, the best indicator of effective fluid resuscitation is:",  
+o: ["Moist mouth","Cap refill <2s","Normal pulse","Warm skin"],  
+a: 1,  
+r: [  
+  {letter:"A", text:"❌ Moist mouth alone does not ensure adequate perfusion."},  
+  {letter:"B", text:"✅ Capillary refill <2 seconds indicates improved perfusion."},  
+  {letter:"C", text:"❌ Normal pulse does not alone indicate effective resuscitation."},  
+  {letter:"D", text:"❌ Warm skin may be present regardless of perfusion."}  
+]  
+},  
+
+//
+// 17
+//
+{
+q: "A child with suspected meningitis presents with neck stiffness and photophobia. Which combined sign supports meningeal irritation?",  
+o: ["Brudzinski’s","Kernig’s","Babinski","Brudzinski + Kernig"],  
+a: 3,  
+r: [
+  {letter:"A", text:"❌ Brudzinski’s sign alone suggests irritation but not as definitive alone."},
+  {letter:"B", text:"❌ Kernig’s suggests irritation but is not specific alone."},
+  {letter:"C", text:"❌ Babinski sign indicates neurologic dysfunction but not meningeal irritation."},
+  {letter:"D", text:"✅ Combined Brudzinski’s and Kernig’s strongly support meningeal irritation."}
+]
+},  
+
+//
+// 18
+//
+{
+q: "Appropriate target oxygen saturation (SpO₂) for a sick child is:",  
+o: [">90%","≥92%","≥94%","≥96%"],  
+a: 2,  
+r: [
+  {letter:"A", text:"❌ >90% may be too low for pediatric patients."},
+  {letter:"B", text:"❌ ≥92% is reasonable but not optimal target."},
+  {letter:"C", text:"✅ ≥94% is the recommended target for most sick children."},
+  {letter:"D", text:"❌ ≥96% is not necessary and may promote oxygen toxicity."}
+]
+},  
+
+//
+// 19
+//
+{
+q: "A child with severe dehydration and poor perfusion should be given:",  
+o: ["Oral fluids","IV isotonic fluids","Dextrose 10%","LR with dextrose"],  
+a: 1,  
+r: [
+  {letter:"A", text:"❌ Oral fluids are not appropriate in shock."},
+  {letter:"B", text:"✅ IV isotonic fluids are indicated for resuscitation."},
+  {letter:"C", text:"❌ Dextrose alone does not restore intravascular volume."},
+  {letter:"D", text:"❌ LR with dextrose might be appropriate later, but initial is isotonic."}
+]
+},
+
+//
+// 20
+//
+{
+q: "During a seizure episode, what is the best initial action?",  
+o: ["Restrain child","Insert tongue blade","Protect airway","Give cold cloth"],  
+a: 2,  
+r: [
+  {letter:"A", text:"❌ Restraining may cause injury."},
+  {letter:"B", text:"❌ Tongue blades can injure oral structures."},
+  {letter:"C", text:"✅ Protecting the airway and clearing secretions is correct."},
+  {letter:"D", text:"❌ Cold cloth does not stop the seizure."}
+]
+},
+
+//
+// 21
+//
+{
+q: "Which tachyarrhythmia is most common in pediatric emergencies?",
+o: ["SVT","V-fib","Atrial fibrillation","Bradyarrhythmia"],
+a: 0,
+r: [
+  {letter:"A", text:"✅ SVT is most common pediatric arrhythmia."},
+  {letter:"B", text:"❌ V‑fib is rare in children."},
+  {letter:"C", text:"❌ Atrial fibrillation uncommon."},
+  {letter:"D", text:"❌ Bradyarrhythmias are not tachyarrhythmias."}
+]
+},
+
+//
+// 22
+//
+{
+q: "A child with suspected appendicitis has right lower quadrant pain. Which sign supports this diagnosis?",  
+o: ["Murphy’s","Rebound tenderness","Kernig’s","Cullen’s"],  
+a: 1,
+r: [
+  {letter:"A", text:"❌ Murphy’s sign is for gallbladder pathology."},
+  {letter:"B", text:"✅ Rebound tenderness suggests peritonitis in appendicitis."},
+  {letter:"C", text:"❌ Kernig’s is a meningeal sign."},
+  {letter:"D", text:"❌ Cullen’s suggests intra‑abdominal bleed."}
+]
+},
+
+//
+// 23
+//
+{
+q: "A child with suspected abuse has inconsistent history and a spiral fracture. What is the appropriate action?",  
+o: ["Dismiss concern","Report to authorities","Return home","Wait for clarification"],  
+a: 1,
+r: [
+  {letter:"A", text:"❌ Dismissing risks further harm."},
+  {letter:"B", text:"✅ Report concern for safety."},
+  {letter:"C", text:"❌ Returning home may be dangerous."},
+  {letter:"D", text:"❌ Waiting delays protection."}
+]
+},
+
+//
+// 24
+//
+{
+q: "In anaphylaxis, which airway sign is most concerning?",  
+o: ["Hoarseness","Stridor","Wheezing","Sneezing"],  
+a: 1,
+r: [
+  {letter:"A", text:"❌ Hoarseness is concerning but not as critical as stridor."},
+  {letter:"B", text:"✅ Stridor indicates upper airway swelling and obstruction."},
+  {letter:"C", text:"❌ Wheezing is lower airway; stridor is upper airway."},
+  {letter:"D", text:"❌ Sneezing is not an emergency sign."}
+]
+},
+//
+// 41
+//
+{
+q:"A 2-year-old presents with sudden lethargy, pallor, and tachycardia after vomiting. Most likely diagnosis?",
+o:["Septic shock","Hypovolemic shock","Anaphylactic shock","Cardiogenic shock"],
+a:1,
+r:[
+{letter:"A", text:"❌ Septic shock may present with fever; sudden onset after vomiting suggests fluid loss."},
+{letter:"B", text:"✅ Hypovolemic shock from dehydration is most consistent with acute pallor and tachycardia."},
+{letter:"C", text:"❌ Anaphylactic shock usually presents with urticaria and airway symptoms."},
+{letter:"D", text:"❌ Cardiogenic shock may present with poor perfusion but is less common after vomiting."}
+]
+},
+
+//
+// 42
+//
+{
+q:"A child with sudden-onset wheezing, cough, and unilateral decreased breath sounds. Most likely cause?",
+o:["Asthma exacerbation","Pneumothorax","Foreign body aspiration","Bronchiolitis"],
+a:2,
+r:[
+{letter:"A", text:"❌ Asthma usually causes bilateral wheezing, not unilateral."},
+{letter:"B", text:"❌ Pneumothorax may cause sudden distress but history often includes trauma."},
+{letter:"C", text:"✅ Foreign body aspiration is consistent with sudden unilateral symptoms."},
+{letter:"D", text:"❌ Bronchiolitis is gradual and usually in infants."}
+]
+},
+
+//
+// 43
+//
+{
+q:"A 5-year-old with fever, purpura, and hypotension. Priority intervention?",
+o:["Give antibiotics","Fluid resuscitation","Monitor vitals","Draw blood cultures"],
+a:1,
+r:[
+{letter:"A", text:"❌ Antibiotics are important but airway and circulation must be prioritized."},
+{letter:"B", text:"✅ Rapid fluid resuscitation is critical to stabilize shock."},
+{letter:"C", text:"❌ Monitoring alone is insufficient."},
+{letter:"D", text:"❌ Cultures are secondary after stabilization."}
+]
+},
+
+//
+// 44
+//
+{
+q:"Child presents with persistent vomiting and lethargy. Labs show hypernatremia. Most likely cause?",
+o:["Diabetes insipidus","Vomiting and dehydration","Excess water intake","Renal failure"],
+a:1,
+r:[
+{letter:"A", text:"❌ DI is rare and presents with polyuria and polydipsia."},
+{letter:"B", text:"✅ Hypernatremia is most likely due to fluid loss from vomiting."},
+{letter:"C", text:"❌ Excess water intake causes hyponatremia, not hypernatremia."},
+{letter:"D", text:"❌ Renal failure can cause electrolyte imbalance, but acute dehydration is more likely."}
+]
+},
+
+//
+// 45
+//
+{
+q:"A 7-year-old with severe asthma has tachypnea, retractions, and accessory muscle use. Which is next step?",
+o:["Administer O₂","Give albuterol nebulizer","Start IV magnesium","Call ICU"],
+a:1,
+r:[
+{letter:"A", text:"❌ Oxygen is important but first-line bronchodilator is priority."},
+{letter:"B", text:"✅ Albuterol nebulizer is standard initial therapy for severe asthma."},
+{letter:"C", text:"❌ IV magnesium is second-line for refractory cases."},
+{letter:"D", text:"❌ ICU may be needed later, not initial step."}
+]
+},
+
+//
+// 46
+//
+{
+q:"Child presents after ingesting unknown amount of bleach. Which is priority?",
+o:["Induce vomiting","Dilute with milk","Call Poison Control","Give activated charcoal"],
+a:2,
+r:[
+{letter:"A", text:"❌ Vomiting can worsen esophageal injury."},
+{letter:"B", text:"❌ Milk is not reliably protective."},
+{letter:"C", text:"✅ Call Poison Control for specific management guidance."},
+{letter:"D", text:"❌ Activated charcoal is ineffective for caustic ingestion."}
+]
+},
+
+//
+// 47
+//
+{
+q:"A 10-year-old with sudden weakness, pallor, and tachycardia after hemolytic episode. Labs show low hemoglobin. Most likely intervention?",
+o:["Transfusion","IV fluids","Oxygen","Antibiotics"],
+a:0,
+r:[
+{letter:"A", text:"✅ Blood transfusion is indicated for symptomatic anemia."},
+{letter:"B", text:"❌ IV fluids may help perfusion but do not correct anemia."},
+{letter:"C", text:"❌ Oxygen helps, but definitive therapy is transfusion."},
+{letter:"D", text:"❌ Antibiotics not indicated unless infection present."}
+]
+},
+
+//
+// 48
+//
+{
+q:"A 6-year-old presents with bradycardia, hypotension, and weak pulses after drowning. Immediate action?",
+o:["CPR","Administer atropine","Provide oxygen","Give IV fluids"],
+a:0,
+r:[
+{letter:"A", text:"✅ CPR is indicated for pulseless or severely bradycardic child."},
+{letter:"B", text:"❌ Atropine may be adjunct but resuscitation is first."},
+{letter:"C", text:"❌ Oxygen alone insufficient."},
+{letter:"D", text:"❌ IV fluids are supportive, not first step."}
+]
+},
+
+//
+// 49
+//
+{
+q:"Child with fever, stiff neck, and photophobia. Best next action?",
+o:["Lumbar puncture","Start antibiotics","Give antipyretics","Monitor"],
+a:1,
+r:[
+{letter:"A", text:"❌ LP is diagnostic but may be delayed until stabilization."},
+{letter:"B", text:"✅ Start empirical IV antibiotics immediately."},
+{letter:"C", text:"❌ Antipyretics do not treat infection."},
+{letter:"D", text:"❌ Monitoring alone is unsafe."}
+]
+},
+
+//
+// 50
+//
+{
+q:"Child presents with acute upper airway obstruction and drooling. Most likely diagnosis?",
+o:["Croup","Epiglottitis","Asthma","Bronchiolitis"],
+a:1,
+r:[
+{letter:"A", text:"❌ Croup has barking cough, not drooling and severe obstruction."},
+{letter:"B", text:"✅ Epiglottitis presents with drooling, tripod posture, and airway obstruction."},
+{letter:"C", text:"❌ Asthma affects lower airway."},
+{letter:"D", text:"❌ Bronchiolitis occurs in infants and rarely causes drooling."}
+]
+},
+
+//
+// 51
+//
+{
+q:"Child presents with persistent vomiting, lethargy, and seizures. Blood glucose low. Immediate action?",
+o:["Give glucose IV","Start antibiotics","Give fluids","Order labs"],
+a:0,
+r:[
+{letter:"A", text:"✅ Correct hypoglycemia immediately with IV glucose."},
+{letter:"B", text:"❌ Antibiotics not first unless infection suspected."},
+{letter:"C", text:"❌ Fluids support but do not correct hypoglycemia."},
+{letter:"D", text:"❌ Labs are needed but treatment is urgent."}
+]
+},
+
+//
+// 52
+//
+{
+q:"A child presents with sudden pallor, dyspnea, and tachycardia after peanut ingestion. First step?",
+o:["Call EMS","Epinephrine IM","Antihistamine","Albuterol"],
+a:1,
+r:[
+{letter:"A", text:"❌ Calling EMS is important but epinephrine is lifesaving."},
+{letter:"B", text:"✅ IM epinephrine is first-line for anaphylaxis."},
+{letter:"C", text:"❌ Antihistamines are adjunctive, not first-line."},
+{letter:"D", text:"❌ Albuterol only treats bronchospasm."}
+]
+},
+
+//
+// 53
+//
+{
+q:"A child with near-drowning event presents hypothermic. Which is correct initial management?",
+o:["Rapid IV fluids","Passive rewarming","Active rewarming","Give warm fluids"],
+a:2,
+r:[
+{letter:"A", text:"❌ IV fluids may follow stabilization."},
+{letter:"B", text:"❌ Passive rewarming may be too slow."},
+{letter:"C", text:"✅ Active rewarming recommended."},
+{letter:"D", text:"❌ Oral fluids inadequate."}
+]
+},
+
+//
+// 54
+//
+{
+q:"Child presents with hypovolemic shock after diarrhea. What is initial bolus?",
+o:["10 mL/kg","20 mL/kg","40 mL/kg","50 mL/kg"],
+a:1,
+r:[
+{letter:"A", text:"❌ 10 mL/kg insufficient."},
+{letter:"B", text:"✅ 20 mL/kg isotonic fluid bolus is correct."},
+{letter:"C", text:"❌ 40 mL/kg may be excessive initially."},
+{letter:"D", text:"❌ 50 mL/kg too high."}
+]
+},
+
+//
+// 55
+//
+{
+q:"Child with airway obstruction from foreign body. Child unconscious. Next action?",
+o:["Heimlich maneuver","Back blows","CPR","Observation"],
+a:2,
+r:[
+{letter:"A", text:"❌ Heimlich used in conscious children."},
+{letter:"B", text:"❌ Back blows for conscious child."},
+{letter:"C", text:"✅ CPR with airway management is needed in unconscious child."},
+{letter:"D", text:"❌ Observation unsafe."}
+]
+},
+
+//
+// 56
+//
+{
+q:"Child with fever, irritability, and purpura. Most likely diagnosis?",
+o:["Meningococcemia","Sepsis","Henoch-Schonlein purpura","Viral exanthem"],
+a:0,
+r:[
+{letter:"A", text:"✅ Meningococcemia often presents with purpura and septic shock."},
+{letter:"B", text:"❌ Sepsis may have fever but purpura is more specific."},
+{letter:"C", text:"❌ HSP presents with palpable purpura and GI symptoms, not acute shock."},
+{letter:"D", text:"❌ Viral exanthems rarely cause purpura and hypotension."}
+]
+},
+
+//
+// 57
+//
+{
+q:"Child presents with bradycardia and hypotension. Which is the priority?",
+o:["Atropine","CPR if pulseless","IV fluids","Oxygen"],
+a:1,
+r:[
+{letter:"A", text:"❌ Atropine is adjunct if bradycardia with perfusion compromise."},
+{letter:"B", text:"✅ CPR indicated if pulseless or severe compromise."},
+{letter:"C", text:"❌ IV fluids support but do not replace CPR."},
+{letter:"D", text:"❌ Oxygen alone insufficient."}
+]
+},
+
+//
+// 58
+//
+{
+q:"Child with suspected diabetic ketoacidosis. Most critical initial test?",
+o:["Electrolytes","Blood glucose","Urinalysis","ABG"],
+a:1,
+r:[
+{letter:"A", text:"❌ Electrolytes are important but not first for diagnosis."},
+{letter:"B", text:"✅ Blood glucose confirms DKA."},
+{letter:"C", text:"❌ Urinalysis alone insufficient."},
+{letter:"D", text:"❌ ABG is supportive, not first."}
+]
+},
+
+//
+// 59
+//
+{
+q:"Child with croup. Most appropriate therapy for mild case?",
+o:["Nebulized epinephrine","Oral steroids","Intubation","Oxygen"],
+a:1,
+r:[
+{letter:"A", text:"❌ Nebulized epinephrine for moderate/severe cases."},
+{letter:"B", text:"✅ Oral steroids reduce airway inflammation for mild croup."},
+{letter:"C", text:"❌ Intubation not needed in mild croup."},
+{letter:"D", text:"❌ Oxygen only if hypoxic."}
+]
+},
+
+//
+// 60
+//
+{
+q:"Child with febrile seizure lasting 3 minutes. Next step?",
+o:["Give lorazepam","Protect airway","Order MRI","Give antibiotics"],
+a:1,
+r:[
+{letter:"A", text:"❌ Medication not needed for short seizures."},
+{letter:"B", text:"✅ Protect airway and monitor breathing."},
+{letter:"C", text:"❌ MRI not indicated."},
+{letter:"D", text:"❌ Antibiotics not indicated unless infection suspected."}
+]
+},
+
+//
+// 61
+//
+{
+q:"Child with hypotension and tachycardia after trauma. Fluid choice?",
+o:["Dextrose 5%","Normal saline 20 mL/kg","Albumin 5%","LR 10 mL/kg"],
+a:1,
+r:[
+{letter:"A", text:"❌ Dextrose does not restore volume."},
+{letter:"B", text:"✅ NS 20 mL/kg is standard bolus for pediatric trauma shock."},
+{letter:"C", text:"❌ Albumin not first-line."},
+{letter:"D", text:"❌ LR at 10 mL/kg insufficient for shock."}
+]
+},
+
+//
+// 62
+//
+{
+q:"Child presents with hypothermia 30°C. Which is priority?",
+o:["Warm blankets","Hot bath","IV glucose","Sedation"],
+a:0,
+r:[
+{letter:"A", text:"✅ Passive rewarming with blankets is safest initial step."},
+{letter:"B", text:"❌ Hot bath may cause shock."},
+{letter:"C", text:"❌ IV glucose does not correct temperature."},
+{letter:"D", text:"❌ Sedation unnecessary and risky."}
+]
+},
+
+//
+// 63
+//
+{
+q:"Child with seizures, hypoglycemia, and lethargy. What is first step?",
+o:["Check glucose","Start IV antibiotics","Give oxygen","Order labs"],
+a:0,
+r:[
+{letter:"A", text:"✅ Always check and correct glucose first."},
+{letter:"B", text:"❌ Antibiotics not emergent."},
+{letter:"C", text:"❌ Oxygen only if hypoxic."},
+{letter:"D", text:"❌ Labs supportive but treatment comes first."}
+]
+},
+
+//
+// 64
+//
+{
+q:"Child with epiglottitis, drooling, tripod position. Most appropriate action?",
+o:["Examine throat","Administer IV antibiotics","Give oral fluids","Observe"],
+a:1,
+r:[
+{letter:"A", text:"❌ Exam may precipitate airway obstruction."},
+{letter:"B", text:"✅ IV antibiotics while monitoring airway is priority."},
+{letter:"C", text:"❌ Oral fluids unsafe."},
+{letter:"D", text:"❌ Observation unsafe."}
+]
+},
+
+//
+// 65
+//
+{
+q:"Child post-tonsillectomy with bright red bleeding. First action?",
+o:["Apply ice collar","Observe","Give analgesics","Pack throat"],
+a:0,
+r:[
+{letter:"A", text:"✅ Ice collar causes vasoconstriction and reduces bleeding."},
+{letter:"B", text:"❌ Observation alone delays care."},
+{letter:"C", text:"❌ Analgesics do not stop bleeding."},
+{letter:"D", text:"❌ Packing may worsen airway obstruction."}
+]
+},
+
+//
+// 66
+//
+{
+q:"Child with sudden cyanosis and choking after peanut. Immediate step?",
+o:["Call EMS","Back blows/chest thrusts","Give fluids","Observe"],
+a:1,
+r:[
+{letter:"A", text:"❌ Calling EMS important but airway relief is priority."},
+{letter:"B", text:"✅ Back blows/chest thrusts correct airway obstruction."},
+{letter:"C", text:"❌ Giving fluids may worsen obstruction."},
+{letter:"D", text:"❌ Observation alone unsafe."}
+]
+},
+
+//
+// 67
+//
+{
+q:"Child with persistent vomiting and lethargy. Labs show low potassium. Best treatment?",
+o:["Oral potassium","IV potassium with cardiac monitoring","Fluid restriction","Insulin"],
+a:1,
+r:[
+{letter:"A", text:"❌ Oral potassium may not be absorbed effectively."},
+{letter:"B", text:"✅ IV potassium with cardiac monitoring is indicated."},
+{letter:"C", text:"❌ Fluid restriction does not correct hypokalemia."},
+{letter:"D", text:"❌ Insulin worsens hypokalemia."}
+]
+},
+
+//
+// 68
+//
+{
+q:"Child with febrile seizure lasting 7 min. Appropriate action?",
+o:["Give lorazepam","Protect airway and O₂","Order MRI","Start antibiotics"],
+a:1,
+r:[
+{letter:"A", text:"❌ Medications only if seizure >5 min or recurrent."},
+{letter:"B", text:"✅ Protect airway and provide oxygen."},
+{letter:"C", text:"❌ MRI not emergent."},
+{letter:"D", text:"❌ Antibiotics only if infection present."}
+]
+},
+
+//
+// 69
+//
+{
+q:"Child with severe dehydration, lethargy, delayed cap refill. First step?",
+o:["Oral rehydration","IV isotonic bolus 20 mL/kg","Give antipyretics","Monitor"],
+a:1,
+r:[
+{letter:"A", text:"❌ Oral fluids inadequate in severe shock."},
+{letter:"B", text:"✅ IV isotonic bolus 20 mL/kg is recommended."},
+{letter:"C", text:"❌ Antipyretics irrelevant."},
+{letter:"D", text:"❌ Observation unsafe."}
+]
+},
+
+//
+// 70
+//
+{
+q:"Child presents with sudden wheezing after allergen exposure. First-line therapy?",
+o:["IV steroids","Albuterol nebulizer","Antihistamine","Oxygen only"],
+a:1,
+r:[
+{letter:"A", text:"❌ Steroids helpful but not first-line for acute attack."},
+{letter:"B", text:"✅ Albuterol nebulizer relieves bronchospasm quickly."},
+{letter:"C", text:"❌ Antihistamine adjunct only."},
+{letter:"D", text:"❌ Oxygen alone insufficient."}
+]
+},
+
+//
+// 71
+//
+{
+q:"Child with hypotension and bradycardia after drowning. First step?",
+o:["IV fluids","CPR if pulseless","Atropine","Oxygen"],
+a:1,
+r:[
+{letter:"A", text:"❌ IV fluids supportive."},
+{letter:"B", text:"✅ CPR indicated if pulseless or severe compromise."},
+{letter:"C", text:"❌ Atropine adjunct only."},
+{letter:"D", text:"❌ Oxygen supportive, not lifesaving first."}
+]
+},
+
+//
+// 72
+//
+{
+q:"Child with suspected sepsis, tachycardia, fever. Initial action?",
+o:["Start IV antibiotics","Give antipyretics","Monitor","Obtain cultures only"],
+a:0,
+r:[
+{letter:"A", text:"✅ Early IV antibiotics are lifesaving in sepsis."},
+{letter:"B", text:"❌ Antipyretics supportive, not primary treatment."},
+{letter:"C", text:"❌ Monitoring alone insufficient."},
+{letter:"D", text:"❌ Cultures are done, but treatment must start immediately."}
+]
+},
+
+//
+// 73
+//
+{
+q:"Child presents with stridor, barking cough. Mild symptoms. Best management?",
+o:["Oxygen","Oral steroid","Nebulized epinephrine","Intubation"],
+a:1,
+r:[
+{letter:"A", text:"❌ Oxygen only if hypoxic."},
+{letter:"B", text:"✅ Oral steroids reduce airway inflammation in mild croup."},
+{letter:"C", text:"❌ Nebulized epinephrine for moderate/severe."},
+{letter:"D", text:"❌ Intubation unnecessary."}
+]
+},
+
+//
+// 74
+//
+{
+q:"Child with sudden airway obstruction, choking, cyanosis. Unconscious. First step?",
+o:["Heimlich maneuver","Back blows","CPR","Call EMS"],
+a:2,
+r:[
+{letter:"A", text:"❌ Heimlich for conscious child."},
+{letter:"B", text:"❌ Back blows for conscious child."},
+{letter:"C", text:"✅ CPR with airway management is indicated."},
+{letter:"D", text:"❌ Calling EMS important but first step is airway."}
+]
+},
+
+//
+// 75
+//
+{
+q:"Child presents with altered mental status, hypoglycemia, and seizures. First step?",
+o:["Check blood glucose","Give anticonvulsant","Start antibiotics","Give fluids"],
+a:0,
+r:[
+{letter:"A", text:"✅ Immediate glucose check and correction is lifesaving."},
+{letter:"B", text:"❌ Anticonvulsants only if prolonged seizure."},
+{letter:"C", text:"❌ Antibiotics only if infection suspected."},
+{letter:"D", text:"❌ Fluids supportive but glucose correction is priority."}
+]
+}
+
+
+
+
+
+]; 
+
+// Paste all 75 questions here
+
+
+
+// Timer
+let totalTime = 75*60;
+const timerElement = document.getElementById("timer");
+const timerInterval = setInterval(()=>{
+  let min=Math.floor(totalTime/60), sec=totalTime%60;
+  timerElement.textContent=`${min}:${sec.toString().padStart(2,'0')}`;
+  if(totalTime<=0){ clearInterval(timerInterval); finishExam(); }
+  totalTime--;
+},1000);
+
+// Shuffle questions
+function shuffle(array){ for(let i=array.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [array[i],array[j]]=[array[j],array[i]]; } return array;}
+const randomizedQuestions = shuffle([...questions]);
+
+// Render question grid
+const gridPanel = document.getElementById("grid-panel");
+randomizedQuestions.forEach((q,idx)=>{
+  const btn = document.createElement("div");
+  btn.className="grid-btn";
+  btn.textContent=idx+1;
+  btn.dataset.index=idx;
+  btn.addEventListener("click", ()=>{currentIndex=idx; showQuestion(currentIndex);});
+  gridPanel.appendChild(btn);
+});
+
+// Render questions
+const examContainer = document.getElementById("exam-container");
+let score=0, currentIndex=0;
+const cardBtns=[];
+
+randomizedQuestions.forEach((q,idx)=>{
+  const card=document.createElement("div");
+  card.className="question-card";
+  if(idx===0) card.classList.add("active");
+  card.innerHTML=`
+    <div class="question-text">${idx+1}. ${q.q}</div>
+    <div class="options">${q.o.map((opt,i)=>`<button data-index="${i}">${String.fromCharCode(65+i)}. ${opt}</button>`).join("")}</div>
+    <div class="rationale">${q.r.map(r=>`<p><strong>${r.letter}:</strong> ${r.text}</p>`).join("")}</div>
+  `;
+  examContainer.appendChild(card);
+  const optionButtons=card.querySelectorAll("button");
+  optionButtons.forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      if(btn.classList.contains("correct")||btn.classList.contains("wrong")) return;
+      const selectedIndex=parseInt(btn.dataset.index);
+      optionButtons.forEach(b=>{
+        b.disabled=true;
+        if(parseInt(b.dataset.index)===q.a) b.classList.add("correct");
+        else if(parseInt(b.dataset.index)===selectedIndex) b.classList.add("wrong");
+      });
+      if(selectedIndex===q.a) score++;
+      card.querySelector(".rationale").classList.add("show-rationale");
+      updateProgress();
+    });
+  });
+  cardBtns.push(card);
+});
+
+const prevBtn=document.getElementById("prev-btn");
+const nextBtn=document.getElementById("next-btn");
+const progressBar=document.getElementById("progress-bar");
+const gridButtons=document.querySelectorAll(".grid-btn");
+
+function showQuestion(idx){
+  cardBtns.forEach(c=>c.classList.remove("active"));
+  cardBtns[idx].classList.add("active");
+  prevBtn.disabled=idx===0;
+  nextBtn.textContent=idx===cardBtns.length-1?"Finish":"Next";
+  updateProgress();
+}
+
+prevBtn.addEventListener("click", ()=>{ if(currentIndex>0){ currentIndex--; showQuestion(currentIndex);} });
+nextBtn.addEventListener("click", ()=>{ if(currentIndex<cardBtns.length-1){ currentIndex++; showQuestion(currentIndex);} else{ finishExam(); } });
+
+function updateProgress(){
+  let answered=0;
+  cardBtns.forEach((c,i)=>{ 
+    const rationale=c.querySelector(".rationale"); 
+    const btn=gridButtons[i];
+    if(rationale.classList.contains("show-rationale")) { answered++; btn.classList.add("answered"); 
+      const selected=Array.from(c.querySelectorAll("button")).find(b=>b.classList.contains("wrong")); 
+      if(selected) btn.classList.add("wrong"); 
+    } else { btn.classList.remove("answered","wrong"); }
+  });
+  progressBar.style.width=((answered/cardBtns.length)*100)+"%";
+}
+
+function finishExam(){
+  clearInterval(timerInterval);
+  document.getElementById("container").style.display="none";
+  document.getElementById("progress-container").style.display="none";
+  document.getElementById("scoreboard").style.display="block";
+  document.getElementById("total").textContent=questions.length;
+  document.getElementById("correct").textContent=score;
+  document.getElementById("incorrect").textContent=questions.length-score;
+  document.getElementById("percentage").textContent=((score/questions.length)*100).toFixed(2);
+}
+</script>
+
+</body>
+</html>
